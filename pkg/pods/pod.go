@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -869,14 +870,21 @@ func (pod *Pod) disableAndForceHaltLaunchables(currentManifest manifest.Manifest
 		return err
 	}
 
+	// sort launchables
+	launchableIDs := make([]string, 0)
+	for launchableID, _ := range launchables {
+		launchableIDs = append(launchableIDs, launchableID)
+	}
+	sort.Strings(launchableIDs)
+
 	// halt launchables
-	for _, launchable := range launchables {
+	for _, launchableID := range launchableIDs {
 		disableFunc := func() {
-			err = launchable.Disable()
+			err = launchables[launchableID].Disable()
 		}
-		pod.withTimeWarnings("disable", launchable.ServiceID(), disableFunc)
+		pod.withTimeWarnings("disable", launchables[launchableID].ServiceID(), disableFunc)
 		if err != nil {
-			pod.logLaunchableWarning(launchable.ServiceID(), err, "Could not disable launchable during uninstallation")
+			pod.logLaunchableWarning(launchables[launchableID].ServiceID(), err, "Could not disable launchable during uninstallation")
 		}
 	}
 
